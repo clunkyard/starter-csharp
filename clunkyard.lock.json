@@ -1,0 +1,28 @@
+{
+  "version": "v2.0.0-kit.1",
+  "sdkVersion": "2.0.0",
+  "language": "csharp",
+  "portable": false,
+  "engine": {
+    "file": "clunkyard-engine-v2.0.0-kit.1.tar.gz",
+    "url": "https://github.com/clunkyard/game-kit/releases/download/v2.0.0-kit.1/clunkyard-engine-v2.0.0-kit.1.tar.gz",
+    "bytes": 7071301,
+    "sha256": "0b9cfa6958a952c32388602821ec4275e61400255f91b212f9c2a9220f8a0d86",
+    "expandedBytes": 33794538
+  },
+  "sdk": {
+    "file": "clunkyard-sdk-csharp-linux-x64-v2.0.0-kit.1.tar.gz",
+    "url": "https://github.com/clunkyard/game-kit/releases/download/v2.0.0-kit.1/clunkyard-sdk-csharp-linux-x64-v2.0.0-kit.1.tar.gz",
+    "bytes": 743523,
+    "sha256": "cbab30f4040b0802fbe9b4f035b95bc8b9ac9d9269fa18c91f26b0785f29258a",
+    "expandedBytes": 3680600
+  },
+  "rebuildBindings": [
+    "csharp"
+  ],
+  "tools": [
+    "node",
+    "make",
+    "dotnet"
+  ]
+}
