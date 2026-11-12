@@ -82,6 +82,24 @@ class Bot : Robot {
             double climb=zone.Shape==Shape.Sphere?Angles.ElevationTo(position,zone.Center):0;
             Drive.Set(0.8,Angles.Clamp(Angles.AngleDiff(Angles.BearingTo(position,zone.Center),self.Heading)/30),Angles.Clamp((climb-self.Pitch)/30));
         }
+        // The arena's rate calibration only; safe to delete.
+        long work=(long)(Raw.Number("state.calibration.work")??0);
+        if(work>0)Status.Set("WORK",CalibrationWork(work,(ulong)Clock.Tick));
+    }
+    // The calibration kernel, xorshift-sqrt v1: work rounds of a 64-bit
+    // xorshift and a square-root sum.
+    static ulong CalibrationWork(long work, ulong tick)
+    {
+        ulong x = 88172645463325252UL ^ tick;
+        double sum = 0;
+        for (long i = 0; i < work; i++)
+        {
+            x ^= x << 13;
+            x ^= x >> 7;
+            x ^= x << 17;
+            sum += Math.Sqrt(x >> 11);
+        }
+        return ((ulong)Math.Floor(sum) + (x >> 40)) % 1000000;
     }
 
     static void Main()=>Clunkyard.Clunkyard.Run(new Bot());
