@@ -7,7 +7,8 @@
 // clock: tick seconds remaining_ticks
 // arena: size gravity terrain_kind ground_height(x y)
 // me: health position velocity heading pitch roll angular_velocity
-//   attitude grounded altitude applied
+//   attitude grounded altitude applied hull_mounts to_mount(heading pitch)
+//   from_mount(heading pitch) mount_toward(point)
 // battery: charge capacity regen sustainable_drive compute
 //   drive_cost(fraction)
 // drive: hover_lift
@@ -29,7 +30,8 @@
 // score: me best armour
 // angles: normalize(degrees) angle_diff(target current)
 //   bearing_to(from to) elevation_to(from to) direction(heading pitch)
-//   distance(a b) clamp(value low high)
+//   distance(a b) to_chassis(heading pitch attitude)
+//   from_chassis(heading pitch attitude) clamp(value low high)
 // raw: number(path) text(path) has(path) flag(path) count(path) line()
 // Controls: drive.set(throttle turn pitch_turn)
 //   drive.forces(thrust strafe lift yaw_torque pitch_torque roll_torque brake)
@@ -42,10 +44,12 @@
 // axis; pitch is positive up.
 // Manual: https://clunkyard.com/manual#sdk
 using System;
+using System.Linq;
 using Clunkyard;
 
 class Bot : Robot {
     bool free;
+    int dodges,dodgeEnd; // dodges taken, and the tick the current one ends
     double Steer(double towards,double current)=>Angles.Clamp(Angles.AngleDiff(towards,current)/45);
     public override void OnStart(){free=Match.Is3d && Arena.Gravity.Z==0;}
     public override void OnTurn(){
@@ -56,6 +60,7 @@ class Bot : Robot {
             double throttle=target.Range>350?0.7:target.Range<200?-0.4:0.2;
             Drive.Set(throttle,Steer(target.Bearing,self.Heading),Steer(target.Elevation,self.Pitch));
             scanner.Set(target.Bearing,20,target.Elevation);
+            // gun.Lead is the intercept if the target holds course.
             double power=gun.PowerForFlightTime(target.Range,1);var aim=gun.Lead(target,power);
             double heading=aim?.Heading??target.Bearing,pitch=aim?.Pitch??target.Elevation;
             gun.Aim(heading,pitch);var now=gun.AimNow;
@@ -70,6 +75,15 @@ class Bot : Robot {
         }else{
             Drive.Set(0.5,0.33,Steer(0,self.Pitch));double pitch=free?((Clock.Tick/10)%3-1)*35:0;
             scanner.Set(Angles.Normalize(scanner.Last.Heading+36),40,pitch);Status.Set("SEARCH");
+        }
+        // A simple dodge: vary it, or predict the shooter.
+        if(Clock.Tick>=dodgeEnd && Sensors.Cues.Any(c=>c.Source==Source.Muzzle)){dodges++;dodgeEnd=Clock.Tick+10;}
+        if(Clock.Tick<dodgeEnd){
+            // Off the line of fire: left, then right next time (turn is positive left, strafe positive right).
+            bool left=dodges%2==1;
+            if(Match.Control==Control.Forces){Drive.Set(throttle:0.5);Drive.Forces(strafe:left?-1:1);}
+            else Drive.Set(1,left?1:-1);
+            Status.Set(left?"dodge:left":"dodge:right",dodges);
         }
         if(Battery.Charge<Battery.Capacity/4)Drive.Set(throttle:(Drive.Get("throttle")??0)*0.5);
         var storm=Nav.Storm;
